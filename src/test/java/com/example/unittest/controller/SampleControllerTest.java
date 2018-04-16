@@ -1,6 +1,8 @@
-package com.example.unittest;
+package com.example.unittest.controller;
 
+import com.example.unittest.controller.SampleController;
 import com.example.unittest.exception.BadRequestException;
+import com.example.unittest.service.SampleService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -15,8 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-
-import javax.xml.ws.http.HTTPException;
+import org.springframework.web.util.NestedServletException;
 
 import static org.junit.Assert.assertEquals;
 
@@ -30,19 +31,24 @@ public class SampleControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-//    @Test(expected = BadRequestException.class)
-//    public void testTransformMessageWithEmptyPayload() throws Exception {
-//
-//        String payload = "{}";
-//
-//        Message message = MessageBuilder
-//                .withPayload(payload.getBytes())
-//                .setHeader(CONTENT_TYPE, APPLICATION_JSON)
-//                .build();
-//
-//        Message m = gstatRequestTransformer.transformMessage(message);
-//
-//    }
+    @Test
+    public void testPing() throws Exception {
+
+        final String expectedResponse = "pong";
+
+        RequestBuilder requestBuilder = MockMvcRequestBuilders
+                .get("/sample/ping")
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        MvcResult result = mockMvc.perform(requestBuilder).andReturn();
+        MockHttpServletResponse response = result.getResponse();
+
+        assertEquals(HttpStatus.OK.value(), response.getStatus());
+
+        assertEquals(expectedResponse, result.getResponse()
+                .getContentAsString());
+    }
 
     @Test
     public void testSayHello() throws Exception {
@@ -69,7 +75,7 @@ public class SampleControllerTest {
                 .getContentAsString());
     }
 
-    @Test(expected = HTTPException.class)
+    @Test(expected = NestedServletException.class)
     public void testSayHelloWithEmptyName() throws Exception {
 
         final String exampleSamplePojo = "{\"name\":\"\"}";
@@ -84,10 +90,23 @@ public class SampleControllerTest {
                 .contentType(MediaType.APPLICATION_JSON);
 
         MvcResult result = mockMvc.perform(requestBuilder).andReturn();
-        //MockHttpServletResponse response = result.getResponse();
+    }
 
-        //assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatus());
+    @Test(expected = NestedServletException.class)
+    public void testSayHelloWithNullName() throws Exception {
 
+        final String exampleSamplePojo = "{}";
+
+        Mockito.when(
+                sampleService.getName(Mockito.any())).thenThrow(BadRequestException.class);
+
+        RequestBuilder requestBuilder = MockMvcRequestBuilders
+                .post("/sample/hello")
+                .accept(MediaType.APPLICATION_JSON)
+                .content(exampleSamplePojo)
+                .contentType(MediaType.APPLICATION_JSON);
+
+        MvcResult result = mockMvc.perform(requestBuilder).andReturn();
     }
 
 
